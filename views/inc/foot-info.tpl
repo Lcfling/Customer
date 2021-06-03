@@ -1,0 +1,1 @@
+<footer> 2018 &copy; Admin by Lcfling &nbsp;&nbsp;</footer>

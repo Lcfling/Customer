@@ -1,0 +1,44 @@
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+	</head>
+	<body style="margin: 0;padding: 0;background: black">
+		<!-- <div id="dplayer"></div> -->
+		<video muted id="videoElement" style="width: 100%;"></video>
+<!--		<img src="paih.png" alt="" width="100%">-->
+	</body>
+	<script src="./flv.min.js"></script>
+	<script>
+
+		//window.addEventListener('message', function (e) {
+			//var data = e.data;//参数
+			//console.log(e);
+			console.log("-----------message--------------")
+
+			if (flvjs.isSupported()) {
+				var videoElement = document.getElementById('videoElement');
+				var flvPlayer = flvjs.createPlayer({
+					isLive: true,
+					type: 'flv',
+					url: 'http://livepull.mmnbq.com/live/30001.flv',
+					hasAudio:true,
+					hasVideo:true,
+				}, {
+					enableWorker:true,
+					enableStashBuffer:true,
+					stashInitialSize: 128
+				});
+				flvPlayer.attachMediaElement(videoElement);
+				flvPlayer.load();
+				flvPlayer.play()
+			}
+		//});
+
+		// parent.postMessage("------------hello!-----cocos---------", "*")
+		// parent.postMessage(data, "*")
+
+	</script>
+
+	
+</html>

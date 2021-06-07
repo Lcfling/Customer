@@ -31,76 +31,73 @@ type SubOrderController struct {
 	controllers.UserBaseController
 }
 
-func (this *SubOrderController)Post(){
-	sublistJson:=this.GetString("proList")
+func (this *SubOrderController) Post() {
+	sublistJson := this.GetString("proList")
 	var paytype int64
-	if this.UserAgent=="weixin"{
-		paytype=0
-	}else{
-		paytype=1
+	if this.UserAgent == "weixin" {
+		paytype = 0
+	} else {
+		paytype = 1
 	}
 
 	var sublist []order.SubList
 
-	err:=json.Unmarshal([]byte(sublistJson), &sublist)
-	if err!=nil{
-		this.Data["json"]=map[string]interface{}{"code": 0, "message": "json格式错误"}
+	err := json.Unmarshal([]byte(sublistJson), &sublist)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "json格式错误"}
 		this.ServeJSON()
 		return
 	}
 
-	token:=this.GetString("dsn")
-	doorinfo,_:=device.GetDiviveByToken(token)
-	store_id:=doorinfo.StoreId
-	if !(store_id>0){
-		this.Data["json"]=map[string]interface{}{"code": 0, "message": "商家信息不存在"}
+	token := this.GetString("dsn")
+	doorinfo, _ := device.GetDiviveByToken(token)
+	store_id := doorinfo.StoreId
+	if !(store_id > 0) {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "商家信息不存在"}
 		this.ServeJSON()
 		return
 	}
 	//生成订单号
-	order_id:=utils.GetOrderSN()
-	enterlog,_:=logs.GetEid(this.Uid)
+	order_id := utils.GetOrderSN()
+	enterlog, _ := logs.GetEid(this.Uid)
 
-	err=order.CreatOrder(sublist,store_id,this.Uid,order_id,paytype,enterlog.Id)
+	err = order.CreatOrder(sublist, store_id, this.Uid, order_id, paytype, enterlog.Id)
 	//logs.UpdateOrderid(storeid,this.Uid,order_id)
 
-	if err!=nil{
-		this.Data["json"]=map[string]interface{}{"code": 0, "message": "创建订单错误，请联系客服处理！"}
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "创建订单错误，请联系客服处理！"}
 		this.ServeJSON()
 		return
 	}
 
-
 	var mapDate map[string]string
 
+	fmt.Println("userAgent:", this.UserAgent)
+	if this.UserAgent == "weixin" {
+		mapDate = CreateWxOrder(order_id, this.Openid)
 
-	fmt.Println("userAgent:",this.UserAgent)
-	if this.UserAgent=="weixin"{
-		mapDate=CreateWxOrder(order_id,this.Openid)
-
-		mapDate["order_id"]=order_id
-	}else{
-		mapDate,err=CreatAliOrder(order_id,this.Uid)
-		if err!=nil{
-			this.Data["json"]=map[string]interface{}{"code": 0, "message": "err:"+err.Error()}
+		mapDate["order_id"] = order_id
+	} else {
+		mapDate, err = CreatAliOrder(order_id, this.Uid)
+		if err != nil {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "err:" + err.Error()}
 			this.ServeJSON()
 			return
 		}
 	}
-	orderSend:=cmd.SendOrder{Cmd:3,Uid:this.Uid,Storeid:store_id,Ordersn:order_id}
-	service_id,_:=service.GetService(store_id)
+	orderSend := cmd.SendOrder{Cmd: 3, Uid: this.Uid, Storeid: store_id, Ordersn: order_id}
+	service_id, _ := service.GetService(store_id)
 
-	go socket.SendMessageToPeer(service_id,orderSend)
+	go socket.SendMessageToPeer(service_id, orderSend)
 
-
-	if err!=nil{
-		this.Data["json"]=map[string]interface{}{"code": 0, "message": "数据处理失败，联系管理员"}
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "数据处理失败，联系管理员"}
 		this.ServeJSON()
 		return
 	}
 
-	fmt.Println("mapData:",mapDate)
-	this.Data["json"]=map[string]interface{}{"code": 1, "message": "success","data":mapDate}
+	fmt.Println("mapData:", mapDate)
+	this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": mapDate}
 	this.ServeJSON()
 	return
 }
@@ -108,24 +105,25 @@ func (this *SubOrderController)Post(){
 type PayOrder struct {
 	controllers.UserBaseController
 }
-func (this *PayOrder)Post(){
-	order_id:=this.GetString("orderid")
-	orderInfo,err:=order.GetOrderByOrderId(order_id)
-	if err!=nil{
-		this.Data["json"]=map[string]interface{}{"code": 0, "message": "订单不存在"}
+
+func (this *PayOrder) Post() {
+	order_id := this.GetString("orderid")
+	orderInfo, err := order.GetOrderByOrderId(order_id)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "订单不存在"}
 		this.ServeJSON()
 		return
 	}
 
-	mapDate:=CreateWxOrder(orderInfo.OrderId,this.Openid)
+	mapDate := CreateWxOrder(orderInfo.OrderId, this.Openid)
 
-	if err==nil{
-		this.Data["json"]=map[string]interface{}{"code": 0, "message": "数据处理失败，联系管理员"}
+	if err == nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "数据处理失败，联系管理员"}
 		this.ServeJSON()
 		return
 	}
-	mapDate["order_id"]=order_id
-	this.Data["json"]=map[string]interface{}{"code": 1, "message": "success","data":mapDate}
+	mapDate["order_id"] = order_id
+	this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": mapDate}
 	this.ServeJSON()
 	return
 }
@@ -134,103 +132,102 @@ type OrderPaid struct {
 	controllers.IndexController
 }
 
-func (this *OrderPaid)Get()  {
-	order_id:=this.GetString("orderid")
-	m,_:=this.GetInt64("m")
-	err:=order.OrderPaid(order_id,m,"sdbshbahw")
+func (this *OrderPaid) Get() {
+	order_id := this.GetString("orderid")
+	m, _ := this.GetInt64("m")
+	err := order.OrderPaid(order_id, m, "sdbshbahw")
 
+	orderinfo, _ := order.GetOrderByOrderId(order_id)
 
-	orderinfo,_:=order.GetOrderByOrderId(order_id)
-
-	service_id,_:=service.GetService(orderinfo.StoreId)
-	change:=cmd.SendOrderStatus{Cmd:5,Uid:orderinfo.Uid,Storeid:orderinfo.StoreId,Status:orderinfo.Status}
-	go socket.SendMessageToPeer(service_id,change)
-	if err!=nil{
-		this.Data["json"]=map[string]interface{}{"code": 0, "message":err.Error()}
+	service_id, _ := service.GetService(orderinfo.StoreId)
+	change := cmd.SendOrderStatus{Cmd: 5, Uid: orderinfo.Uid, Storeid: orderinfo.StoreId, Status: orderinfo.Status}
+	go socket.SendMessageToPeer(service_id, change)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": err.Error()}
 		this.ServeJSON()
 		return
-	}else{
-		this.Data["json"]=map[string]interface{}{"code": 1, "message":"success"}
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success"}
 		this.ServeJSON()
 	}
 }
-
 
 type OrderList struct {
 	controllers.UserBaseController
 }
 
-func (this *OrderList) Get(){
-	lastid,_:=this.GetInt64("lastid")
-	orderlist,err:=order.GetOrdersByUid(this.Uid,lastid)
+func (this *OrderList) Get() {
+	lastid, _ := this.GetInt64("lastid")
+	orderlist, err := order.GetOrdersByUid(this.Uid, lastid)
 	var sellarray [][]order.SellDetail
 	var orderMaplist []map[string]interface{}
-	for _,v:=range orderlist {
+	for _, v := range orderlist {
 		var selllist []order.SellDetail
-		_,selllist,_=order.ListByOrder(v.OrderId)
-		sellarray=append(sellarray,selllist)
+		_, selllist, _ = order.ListByOrder(v.OrderId)
+		sellarray = append(sellarray, selllist)
 		//var value map[string]interface{}
-		value:=make(map[string]interface{})
-		value,_=utils.StoMap(v)
-		Store,_:=order.GetStoreById(v.StoreId)
-		value["Storename"]=Store.Name
-		orderMaplist=append(orderMaplist,value)
+		value := make(map[string]interface{})
+		value, _ = utils.StoMap(v)
+		Store, _ := order.GetStoreById(v.StoreId)
+		value["Storename"] = Store.Name
+		orderMaplist = append(orderMaplist, value)
 	}
-	data:=map[string]interface{}{"orderlist":orderMaplist,"sellarray":sellarray}
-	if err!=nil{
-		this.Data["json"]=map[string]interface{}{"code": 0, "message":"没有更多的信息"}
+	data := map[string]interface{}{"orderlist": orderMaplist, "sellarray": sellarray}
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有更多的信息"}
 		this.ServeJSON()
 		return
-	}else{
-		this.Data["json"]=map[string]interface{}{"code": 1, "message":"success","data":data}
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": data}
 		this.ServeJSON()
 		return
 	}
 }
+
 type OrderDetail struct {
 	controllers.UserBaseController
 }
 
-func(this *OrderDetail) Get() {
+func (this *OrderDetail) Get() {
 
-
-	order_id:=this.GetString("orderid")
-	orderInfo,err:=order.GetOrderByOrderId(order_id)
-	if err!=nil{
-		this.Data["json"]=map[string]interface{}{"code": 0, "message":"订单不存在"}
+	order_id := this.GetString("orderid")
+	orderInfo, err := order.GetOrderByOrderId(order_id)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "订单不存在"}
 		this.ServeJSON()
 		return
 	}
-	_,selllist,err:=order.ListByOrder(order_id)
-	if err!=nil{
-		this.Data["json"]=map[string]interface{}{"code": 0, "message":"订单详情为空"}
+	_, selllist, err := order.ListByOrder(order_id)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "订单详情为空"}
 		this.ServeJSON()
 		return
 	}
-	data:=map[string]interface{}{"orderinfo":orderInfo,"selllist":selllist}
-	this.Data["json"]=map[string]interface{}{"code": 1, "message":"success","data":data}
+	data := map[string]interface{}{"orderinfo": orderInfo, "selllist": selllist}
+	this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": data}
 	this.ServeJSON()
 
 }
+
 /*
-    Package core 微信支付api v3 go http-client 基础库，你可以使用它来创建一个client，并向微信支付发送http请求
-    只需要你在初始化客户端的时候，传递credential以及validator
-    credential用来生成http header中的authorization信息
-    validator则用来校验回包是否被篡改
-    如果http请求返回的err为nil，一般response.Body 都不为空，你可以尝试对其进行序列化
-    请注意及时关闭response.Body
-    注意：使用微信支付apiv3 go库需要引入相关的包，该示例代码必须引入的包名有以下信息
+   Package core 微信支付api v3 go http-client 基础库，你可以使用它来创建一个client，并向微信支付发送http请求
+   只需要你在初始化客户端的时候，传递credential以及validator
+   credential用来生成http header中的authorization信息
+   validator则用来校验回包是否被篡改
+   如果http请求返回的err为nil，一般response.Body 都不为空，你可以尝试对其进行序列化
+   请注意及时关闭response.Body
+   注意：使用微信支付apiv3 go库需要引入相关的包，该示例代码必须引入的包名有以下信息
 
-    "context"
-    "crypto/x509"
-    "fmt"
-    "io/ioutil"
-    "log"
-    "github.com/wechatpay-apiv3/wechatpay-go/core"
-    "github.com/wechatpay-apiv3/wechatpay-go/core/option"
-    "github.com/wechatpay-apiv3/wechatpay-go/utils"
+   "context"
+   "crypto/x509"
+   "fmt"
+   "io/ioutil"
+   "log"
+   "github.com/wechatpay-apiv3/wechatpay-go/core"
+   "github.com/wechatpay-apiv3/wechatpay-go/core/option"
+   "github.com/wechatpay-apiv3/wechatpay-go/utils"
 
-    */
+*/
 func SetUp() (opt []option.ClientOption, err error) {
 	//商户号
 	mchID := beego.AppConfig.String("wechat_mchID")
@@ -250,19 +247,19 @@ func SetUp() (opt []option.ClientOption, err error) {
 	// 加载微信支付平台证书
 	wechatPayCertificate, err := wx.LoadCertificateWithPath(wechatCertificatePath)
 	if err != nil {
-		log.Printf("load certificate err:%s",err)
+		log.Printf("load certificate err:%s", err)
 		return nil, err
 	}
 	//设置header头中authorization信息
 	opts := []option.ClientOption{
-		option.WithMerchant(mchID, mchCertSerialNumber, privateKey), // 设置商户相关配置
+		option.WithMerchant(mchID, mchCertSerialNumber, privateKey),     // 设置商户相关配置
 		option.WithWechatPay([]*x509.Certificate{wechatPayCertificate}), // 设置微信支付平台证书，用于校验回包信息用
 		option.WithoutValidator(),
 	}
 	return opts, nil
 }
 
-func CreateWxOrder(order_id,openid string)map[string]string {
+func CreateWxOrder(order_id, openid string) map[string]string {
 	// 初始化客户端
 	defer func() {
 		if err := recover(); err != nil {
@@ -271,29 +268,29 @@ func CreateWxOrder(order_id,openid string)map[string]string {
 	}()
 
 	mchID := beego.AppConfig.String("wechat_mchID")
-	appid:=beego.AppConfig.String("wx_appid")
-	orderInfo,_:=order.GetOrderByOrderId(order_id)
+	appid := beego.AppConfig.String("wx_appid")
+	orderInfo, _ := order.GetOrderByOrderId(order_id)
 	ctx := context.TODO()
 	opts, err := SetUp()
 	if err != nil {
 		return nil
 	}
-	client, err := core.NewClient(ctx, opts...,)
-	if err != nil{
-		log.Printf("init client err:%s",err)
+	client, err := core.NewClient(ctx, opts...)
+	if err != nil {
+		log.Printf("init client err:%s", err)
 		return nil
 	}
 	//设置请求地址
 	URL := "https://api.mch.weixin.qq.com/v3/pay/transactions/jsapi"
 	//设置请求信息,此处也可以使用结构体来进行请求
 	mapInfo := map[string]interface{}{
-		"mchid": mchID,
+		"mchid":        mchID,
 		"out_trade_no": order_id,
-		"appid": appid,
-		"description": "U云智能无人超市订单支付",
-		"notify_url": beego.AppConfig.String("wechat_notifyUrl"),
+		"appid":        appid,
+		"description":  "U云智能无人超市订单支付",
+		"notify_url":   beego.AppConfig.String("wechat_notifyUrl"),
 		"amount": map[string]interface{}{
-			"total": orderInfo.TotalPrice,
+			"total":    orderInfo.TotalPrice,
 			"currency": "CNY",
 		},
 		"payer": map[string]interface{}{
@@ -303,21 +300,21 @@ func CreateWxOrder(order_id,openid string)map[string]string {
 
 	// 发起请求
 	response, err := client.Post(ctx, URL, mapInfo)
-	if err != nil{
-		log.Printf("client post err:%s",err)
+	if err != nil {
+		log.Printf("client post err:%s", err)
 		//return ""
 	}
 
 	// 校验回包内容是否有逻辑错误
 	err = core.CheckResponse(response)
-	if err != nil{
-		log.Printf("check response err:%s",err)
+	if err != nil {
+		log.Printf("check response err:%s", err)
 		return nil
 	}
 	// 读取回包信息
 	body, err := ioutil.ReadAll(response.Body)
-	if err != nil{
-		log.Printf("read response body err:%s",err)
+	if err != nil {
+		log.Printf("read response body err:%s", err)
 		return nil
 	}
 	fmt.Println(string(body))
@@ -325,85 +322,79 @@ func CreateWxOrder(order_id,openid string)map[string]string {
 	err = json.Unmarshal(body, &prepaymap)
 
 	//开始签名
-	timeStamp:=strconv.FormatInt(time.Now().Unix(),10)
-	nonceStr:=utils.Md5(utils.RandChar(6))
-	packageStr:="prepay_id="+prepaymap["prepay_id"]
-	signBody:=appid+"\n"
-	signBody+=timeStamp+"\n"
-	signBody+=nonceStr+"\n"
-	signBody+=packageStr+"\n"
+	timeStamp := strconv.FormatInt(time.Now().Unix(), 10)
+	nonceStr := utils.Md5(utils.RandChar(6))
+	packageStr := "prepay_id=" + prepaymap["prepay_id"]
+	signBody := appid + "\n"
+	signBody += timeStamp + "\n"
+	signBody += nonceStr + "\n"
+	signBody += packageStr + "\n"
 	privateKeyPath := "./cert/apiclient_key.pem"
 	privateKey, err := wx.LoadPrivateKeyWithPath(privateKeyPath)
 
 	//Signer:=&signers.Sha256WithRSASigner{PrivateKey: privateKey, MchCertificateSerialNo: mchCertSerialNumber}
-	sign,err:=signers.Sha256WithRsa(signBody,privateKey)
+	sign, err := signers.Sha256WithRsa(signBody, privateKey)
 
-	resultMap:=make(map[string]string)
-	resultMap["timeStamp"]=timeStamp
-	resultMap["nonceStr"]=nonceStr
-	resultMap["package"]=packageStr
-	resultMap["signType"]="RSA"
-	resultMap["paySign"]=sign
+	resultMap := make(map[string]string)
+	resultMap["timeStamp"] = timeStamp
+	resultMap["nonceStr"] = nonceStr
+	resultMap["package"] = packageStr
+	resultMap["signType"] = "RSA"
+	resultMap["paySign"] = sign
 
 	return resultMap
 }
 
+func CreatAliOrder(order_id string, uid int64) (map[string]string, error) {
 
-func CreatAliOrder(order_id string,uid int64)(map[string]string,error){
+	userinfo, _ := users.GetUser(uid)
 
+	orderInfo, _ := order.GetOrderByOrderId(order_id)
 
-	userinfo,_:=users.GetUser(uid)
-
-
-	orderInfo,_:=order.GetOrderByOrderId(order_id)
-
-
-	client:= pay.NewClient()
-	client.AppId=beego.AppConfig.String("alipay_x_appid")
-	client.AppId="2021002145616351"
-	client.Keypath=beego.AppConfig.String("ali_privatekey")
-	client.Keypath="MIIEowIBAAKCAQEAoprutP5tIXd2hs71ilWL9Kjg4twseUdMJ0RxbdO/irr1g/ty6dLSHN28lk7aXWRZmJE4mUNbWrMZA/O05bWDgi15pL1xTRBvvRQ21zVbxXw4Bdzq7WYNE89C7mGO7TDxsZDkRF1WlWRrYRCdHSOkyTPHd2mhMTfL/zXNvtLMmzrDTy3pssU02vwoHbM5iRIPVzYx/r32QXJvSKo9c5OqGsKg8JlWIzuj8l53UVEKII2pnsHk4VO5qs/aVhquWXEiUPxXspTpSyrxavnwaMSi0a4jjyrO1zPUr5hTAh5e1GsbLSdCS8pRBLh5rEwcXFOEOn23GNGGInkR6P79J/s/hwIDAQABAoIBAQCXqdix+olBaNKlpI2C7I2wsn+nOWNF70lJat49aP5D4GO1KagiDaAqimsm6v9jkoC6++CFmzyvGVNgy0PT6XxyxAWssYHnNkhyXFNWYY9qYJVEaqy4prHV40BzZY1REJCuZQ1z8ncaumIpU7ynfCJsBB6s81oEtR1RuhZgQO/Ua/lqidKF0tUzsy/62jPzJoqwJG1Vn4Nb7lHpGXf5J2AIP6sM0nOzWYLYFfyP1LmNg/OpJhDWUKHJBQCOB3jlcinKLbN1ncBHxqMCJQ7xAn1ir07eInG0AVdU9vHigBWY7P9SSxzy3zwxIl5XRFXrFWltGPw6CLJGg3Igu7SRJNDZAoGBAOD05FxWzTDwzrNnJAh/3fpVboGVXjlBj4ri9y0fZU8AST33iZ7I9W9l9wAA4lS2DpS7RTVzvJ9wjQFrBWVEuH+8vIzzFQeiPSJf0Z/bEVx31IzGF6H/9qdRkOgYt/gZ4yic+hHqN+g3bPifW9GRKOtW+sRIBoZHQHGHvihraO4FAoGBALkLVYeUz6JsmUPJ6U0qT82ZQWHPnLP+VXoA5ZiNtc/UK+LqD+K/4fXfXF6NIdUDctGB50/V2T0seaDQ0N3MF7fuqoVCZy1I3FdtQcgTGmTyojzxTKKeOj6EEUOlt8Pv0ABE8QGifUbF2s2QC59ORToB5MzAMjyQkjwGt7xJpaEbAoGANlDrEqCiyr5aKlctDCBTqK4YEJHQPmLmFdLXe72o6HpZNO0f/YboPA2Sph2QiIOs4ZyWCWH4mUbDxSPiGaGOKsmXfTD0UvOJb1NTehWbC4ijeZoa+rKjC6NWKbRON0mI37WHa+vxs9AuL5nKwb8a8jf+NIZvjNyHYuIzt+63V0ECgYBCHjukY1bBiZ5F64pyKRE0vHLxORab9d+i5VkkZlY1eXFo9gtRERDzIqlFm5YgH8hR9eGp1BZ4VkDrZlGLPtamwR+q1+w38RXSI1bi33iJ42x27B1e6byUA+qLSlZcK38d6YRX+jBbLm0dEEAm3ve7X1vakT4iB+JIknnqTEJjSwKBgG7PFJv/ZjqQnjKr5QWqqjQb2MuH15yLlN8SLQ8RV91groGVPBGSLQr1pELH0oBT1wowGVRWNIyjgdvN+zCauc7SIHdliHwvPVLuRO/i1phKBTlnavrITtPjl+n9tDnDNYYrZEoBB4SGoBvbb/OWeq2uCJClqvGMut3xpA7sgBiB"
-	client.SignType="RSA2"
-	client.Version="1.0"
-	client.NotifyUrl=beego.AppConfig.String("alipay_notifyUrl")
+	client := pay.NewClient()
+	client.AppId = beego.AppConfig.String("alipay_x_appid")
+	client.Keypath = beego.AppConfig.String("ali_privatekey")
+	client.SignType = "RSA2"
+	client.Version = "1.0"
+	client.NotifyUrl = beego.AppConfig.String("alipay_notifyUrl")
 	//client.AppAuthToken=userinfo.Accesstoken
 	//client.Code=code
 	//err:=client.SetAppSn("./cert/appCertPublicKey.cer")
 
 	//err=client.SetRootSn("./cert/alipayRootCert.cer")
 
-	BizContent:=make(map[string]interface{})
-	BizContent["out_trade_no"]=order_id
-	BizContent["total_amount"]=float64(orderInfo.TotalPrice)/100
-	BizContent["buyer_id"]=userinfo.Openid
-	BizContent["subject"]="U云智能无人超市订单支付"
+	BizContent := make(map[string]interface{})
+	BizContent["out_trade_no"] = order_id
+	BizContent["total_amount"] = float64(orderInfo.TotalPrice) / 100
+	BizContent["buyer_id"] = userinfo.Openid
+	BizContent["subject"] = "微淘云智服超市订单支付"
 	BizJson, err := json.Marshal(BizContent)
-	if err!=nil{
-		return nil,err
+	if err != nil {
+		return nil, err
 	}
 
-	fmt.Println("biz::",string(BizJson))
-	client.BizContent=string(BizJson)
+	fmt.Println("biz::", string(BizJson))
+	client.BizContent = string(BizJson)
 
-	resJson,err:=client.Execute()
-	if err!=nil{
-		fmt.Println("err::::",err)
-		return nil,err
+	resJson, err := client.Execute()
+	if err != nil {
+		fmt.Println("err::::", err)
+		return nil, err
 	}
-	fmt.Println("json:::",resJson)
+	fmt.Println("json:::", resJson)
 	var mapResult map[string]interface{}
-	err= json.Unmarshal([]byte(resJson), &mapResult)
-	if err!=nil{
-		return nil,err
+	err = json.Unmarshal([]byte(resJson), &mapResult)
+	if err != nil {
+		return nil, err
 	}
-	res,ok:=mapResult["alipay_trade_create_response"].(map[string]interface{})
+	res, ok := mapResult["alipay_trade_create_response"].(map[string]interface{})
 
-	if !ok{
-		return nil,errors.New("date error")
+	if !ok {
+		return nil, errors.New("date error")
 	}
 
-	back:=make(map[string]string)
-	back["trade_no"]=res["trade_no"].(string)
-	back["order_id"]=res["out_trade_no"].(string)
-	return back,nil
+	back := make(map[string]string)
+	back["trade_no"] = res["trade_no"].(string)
+	back["order_id"] = res["out_trade_no"].(string)
+	return back, nil
 }

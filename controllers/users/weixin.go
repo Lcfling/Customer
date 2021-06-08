@@ -86,12 +86,14 @@ func (this *CodeSession) Post() {
 				user.Id = uid
 				user.Token = token
 				users.UpdateAccesstoken(user.Id, mapBody["session_key"].(string))
+				delluserinfo(user)
 				this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": map[string]interface{}{"first": true, "userinfo": user}, "session_key": mapBody["session_key"].(string)}
 				this.ServeJSON()
 			}
 
 		} else {
 			users.UpdateAccesstoken(UserInfo.Id, mapBody["session_key"].(string))
+			delluserinfo(&UserInfo)
 			this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": map[string]interface{}{"first": false, "userinfo": UserInfo}, "session_key": mapBody["session_key"].(string)}
 			this.ServeJSON()
 		}
@@ -151,11 +153,13 @@ func (this *CodeSession) Post() {
 				user.Id = uid
 				user.Token = token
 				users.UpdateAccesstoken(user.Id, accesstoken)
+				delluserinfo(user)
 				this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": map[string]interface{}{"first": true, "userinfo": user}, "access_token": accesstoken}
 				this.ServeJSON()
 			}
 		} else {
 			users.UpdateAccesstoken(UserInfo.Id, accesstoken)
+			delluserinfo(&UserInfo)
 			this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": map[string]interface{}{"first": false, "userinfo": UserInfo}, "access_token": accesstoken}
 			this.ServeJSON()
 		}
@@ -236,4 +240,7 @@ func (this *WxPayNotify) Post() {
 	this.Data["json"] = map[string]interface{}{"code": "success", "message": "成功"}
 	this.ServeJSON()
 	return
+}
+func delluserinfo(u *users.Users) {
+	u.Phone = utils.StrReplacepos(u.Phone, 3, 4, "****")
 }

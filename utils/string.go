@@ -46,7 +46,6 @@ func GetRandomIntString(lens int) string {
 	return string(result)
 }
 
-
 //字串截取
 func SubString(s string, pos, length int) string {
 	runes := []rune(s)
@@ -55,6 +54,21 @@ func SubString(s string, pos, length int) string {
 		l = len(runes)
 	}
 	return string(runes[pos:l])
+}
+func StrReplacepos(s string, pos, length int, t string) string {
+	l := pos + length
+
+	runes := []byte(s)
+	if len(runes) < l {
+		return s
+	}
+	ts := []byte(t)
+	if len(ts) < length {
+		return s
+	}
+
+	copy(runes[pos:l], ts[0:length])
+	return string(runes[0:])
 }
 
 func GetFileSuffix(s string) string {
@@ -142,12 +156,12 @@ func RemoveDuplicatesAndEmpty(a []string) (ret []string) {
 	}
 	return
 }
-func GetUserAgent(str string) string{
+func GetUserAgent(str string) string {
 
-	if strings.Contains(str,"MicroMessenger") {
+	if strings.Contains(str, "MicroMessenger") {
 		return "weixin"
 	}
-	if strings.Contains(str,"AlipayClient") {
+	if strings.Contains(str, "AlipayClient") {
 		return "Alipay"
 	}
 	return ""

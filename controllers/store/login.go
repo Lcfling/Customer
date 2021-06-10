@@ -49,3 +49,21 @@ func (this *Login) Post() {
 		return
 	}
 }
+
+type BillLists struct {
+	controllers.MobileController
+}
+
+func (this *BillLists) Get() {
+	lastid, _ := this.GetInt64("lastid")
+	list, err := users.BillList(this.Uid, lastid)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有更多的信息"}
+		this.ServeJSON()
+		return
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": list}
+		this.ServeJSON()
+		return
+	}
+}

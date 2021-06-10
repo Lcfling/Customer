@@ -84,7 +84,7 @@ func UpdateStore(store Store) error {
 	if store.Address != "" {
 		s.Address = store.Address
 	}
-	_, err = o.Update(&s, "name", "location", "address", "lng", "lat")
+	_, err = o.Update(&s, "name", "location", "phone", "address", "lng", "lat")
 	return err
 }
 func GetStoreList(uid int64) (int64, []Store, error) {

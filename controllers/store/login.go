@@ -1,10 +1,13 @@
 package store
 
 import (
+	"fmt"
 	"github.com/Lcfling/Customer/controllers"
 	"github.com/Lcfling/Customer/models/users"
 	"github.com/Lcfling/Customer/utils"
+	"html"
 	"strconv"
+	"strings"
 )
 
 type Login struct {
@@ -63,6 +66,52 @@ func (this *BillLists) Get() {
 		return
 	} else {
 		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": list}
+		this.ServeJSON()
+		return
+	}
+}
+
+type Finance struct {
+	controllers.MobileController
+}
+
+func (this *Finance) Post() {
+	mod, _ := this.GetInt64("type")
+	if !(mod > 0 && mod < 5) {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "错误的信息类型"}
+		this.ServeJSON()
+		return
+	}
+	name := html.EscapeString(this.GetString("name"))
+	bankname := html.EscapeString(this.GetString("bankname"))
+	code := html.EscapeString(this.GetString("code"))
+
+	var pro users.Finance
+	pro.Uid = this.Uid
+	pro.Bankname = bankname
+	pro.Code = code
+	pro.Type = mod
+	pro.Name = name
+	id, err := users.AddFinance(pro)
+	if err == nil {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "入库信息成功", "data": fmt.Sprintf("%d", id)}
+	} else {
+		if strings.Contains(err.Error(), "Error 1062") {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "银行卡重复"}
+		} else {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "入库信息失败：" + err.Error()}
+		}
+	}
+	this.ServeJSON()
+}
+func (this *Finance) Get() {
+	list, err := users.GetFinanceList(this.Uid)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "获取失败：" + err.Error()}
+		this.ServeJSON()
+		return
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "获取成功", "data": list}
 		this.ServeJSON()
 		return
 	}

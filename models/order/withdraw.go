@@ -16,6 +16,7 @@ type Withdraw struct {
 	Money    int64
 	Creatime int64
 	Uptime   int64
+	Fid      int64
 	Types    int
 	Status   int64
 	Mark     string
@@ -28,7 +29,7 @@ func init() {
 	orm.RegisterModel(new(Withdraw))
 }
 
-func SubWithdraw(order_id string, money int64, uid int64, types int) error {
+func SubWithdraw(order_id string, money, uid, fid int64, types int) error {
 	o := orm.NewOrm()
 	err := o.Begin()
 	if err != nil {
@@ -60,6 +61,7 @@ func SubWithdraw(order_id string, money int64, uid int64, types int) error {
 	order.Uid = uid
 	order.OrderId = order_id
 	order.Money = money
+	order.Fid = fid
 	order.Creatime = time.Now().Unix()
 	order.Types = types
 	order.Status = 0

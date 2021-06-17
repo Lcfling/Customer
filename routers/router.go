@@ -76,5 +76,7 @@ func init() {
 	beego.Router("/store/videos", &store.GetVideos{})               //摄像头列表
 	beego.Router("/store/wxconfig", &store.GetJsConfig{})           //微信js
 	beego.Router("/store/bill", &store.BillLists{})                 //商家账单
+	beego.Router("/store/finance", &store.Finance{})                //财务信息
+	beego.Router("/store/userinfo", &store.UserInfo{})              //获取用户信息
 	/* --------  end   ---------店家接口*/
 }

@@ -116,3 +116,23 @@ func (this *Finance) Get() {
 		return
 	}
 }
+
+type UserInfo struct {
+	controllers.MobileController
+}
+
+func (this *UserInfo) Get() {
+	u, err := users.GetUser(this.Uid)
+	u.Token = ""
+	u.Accesstoken = ""
+	u.Pwd = ""
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "获取失败：" + err.Error()}
+		this.ServeJSON()
+		return
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "获取成功", "data": u}
+		this.ServeJSON()
+		return
+	}
+}

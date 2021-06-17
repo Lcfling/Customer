@@ -6,6 +6,7 @@ import (
 	"github.com/Lcfling/Customer/models/device"
 	"github.com/Lcfling/Customer/models/logs"
 	"github.com/Lcfling/Customer/models/order"
+	"github.com/Lcfling/Customer/models/users"
 	"github.com/Lcfling/Customer/utils"
 	"html"
 	"strconv"
@@ -335,15 +336,28 @@ type WithDraw struct {
 
 func (this *WithDraw) Post() {
 	money, _ := this.GetInt64("money")
-	types, _ := this.GetInt("type")
+	fid, _ := this.GetInt64("fid")
+	//types, _ := this.GetInt("type")
 
+	if !(fid > 0) {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "请选择正确的提现方式"}
+		this.ServeJSON()
+		return
+	}
+	finance, err := users.GetFinanceById(fid)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有找到相关账号"}
+		this.ServeJSON()
+		return
+	}
+	types := finance.Type
 	order_id := utils.GetOrderSN()
 	if money < 100 {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": "最低提现额度为1元"}
 		this.ServeJSON()
 		return
 	}
-	err := order.SubWithdraw(order_id, money, this.Uid, types)
+	err = order.SubWithdraw(order_id, money, this.Uid, fid, int(types))
 	if err != nil {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": err.Error()}
 		this.ServeJSON()

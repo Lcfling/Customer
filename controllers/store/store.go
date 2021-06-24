@@ -16,7 +16,7 @@ import (
 //需要权限
 //
 type GoodsController struct {
-	controllers.MobileController
+	controllers.StaffController
 }
 
 func (this *GoodsController) Get() {
@@ -61,13 +61,12 @@ func (this *SellCounts) Get() {
 
 //添加商品
 type ProductAddController struct {
-	controllers.MobileController
+	controllers.StaffController
 }
 
 func (this *ProductAddController) Get() {
 	barcode, _ := this.GetInt64("barcode")
 	pro := order.GetProductByCode(barcode)
-
 	this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": pro}
 	this.ServeJSON()
 }
@@ -108,9 +107,11 @@ func (this *ProductAddController) Post() {
 		return
 	}
 	if storeInfo.Uid != this.Uid {
-		this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有店铺权限"}
-		this.ServeJSON()
-		return
+		if !this.IsStorePower(store_id) {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有店铺权限"}
+			this.ServeJSON()
+			return
+		}
 	}
 
 	var pro order.Product
@@ -142,7 +143,7 @@ func (this *ProductAddController) Post() {
 }
 
 type ProductEdit struct {
-	controllers.MobileController
+	controllers.StaffController
 }
 
 func (this *ProductEdit) Get() {
@@ -177,6 +178,14 @@ func (this *ProductEdit) Post() {
 		this.ServeJSON()
 		return
 	}
+	storeInfo, err := order.GetStoreById(store_id)
+	if storeInfo.Uid != this.Uid {
+		if !this.IsStorePower(store_id) {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有店铺权限"}
+			this.ServeJSON()
+			return
+		}
+	}
 
 	var p order.Product
 
@@ -208,7 +217,7 @@ type nextPageUrl struct {
 
 //商品列表
 type ProductList struct {
-	controllers.MobileController
+	controllers.StaffController
 }
 
 func (this *ProductList) Get() {
@@ -234,9 +243,11 @@ func (this *ProductList) Get() {
 		return
 	}
 	if storeInfo.Uid != this.Uid {
-		this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有店铺权限"}
-		this.ServeJSON()
-		return
+		if !this.IsStorePower(store_id) {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有店铺权限"}
+			this.ServeJSON()
+			return
+		}
 	}
 	_, list, err := order.ProductListPages(store_id, cate_id, keyword, pages)
 	if err != nil {
@@ -298,7 +309,7 @@ func (this *CreateStore) Post() {
 
 //订单列表
 type OrderList struct {
-	controllers.MobileController
+	controllers.StaffController
 }
 
 func (this *OrderList) Get() {
@@ -307,9 +318,11 @@ func (this *OrderList) Get() {
 	// 鉴权 store_id
 	storeInfo, err := order.GetStoreById(store_id)
 	if storeInfo.Uid != this.Uid {
-		this.Data["json"] = map[string]interface{}{"code": 0, "message": "错误的门店"}
-		this.ServeJSON()
-		return
+		if !this.IsStorePower(store_id) {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有店铺权限"}
+			this.ServeJSON()
+			return
+		}
 	}
 	orderlist, err := order.GetOrdersBySId(store_id, lastid)
 	var sellarray [][]order.SellDetail
@@ -331,7 +344,7 @@ func (this *OrderList) Get() {
 }
 
 type OrderDetail struct {
-	controllers.BaseController
+	controllers.StaffController
 }
 
 func (this *OrderDetail) Get() {
@@ -394,11 +407,22 @@ func (this *WithDraw) Post() {
 }
 
 type StoreList struct {
-	controllers.MobileController
+	controllers.StaffController
 }
 
 func (this *StoreList) Get() {
-	_, list, err := order.GetStoreList(this.Uid)
+	var mer_id int64
+	if this.UserType == 4 {
+		if this.MerId == 0 {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "找不到商户Id"}
+			this.ServeJSON()
+			return
+		}
+		mer_id = this.MerId
+	} else {
+		mer_id = this.Uid
+	}
+	_, list, err := order.GetStoreList(mer_id)
 	if err != nil {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": err.Error()}
 		this.ServeJSON()
@@ -411,18 +435,19 @@ func (this *StoreList) Get() {
 }
 
 type StoreInfo struct {
-	controllers.MobileController
+	controllers.StaffController
 }
 
 func (this *StoreInfo) Get() {
 	store_id, _ := this.GetInt64("storeid")
 	storeInfo, err := order.GetStoreById(store_id)
 	if storeInfo.Uid != this.Uid {
-		this.Data["json"] = map[string]interface{}{"code": 0, "message": "错误的门店"}
-		this.ServeJSON()
-		return
+		if !this.IsStorePower(store_id) {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "错误的门店"}
+			this.ServeJSON()
+			return
+		}
 	}
-
 	if err != nil {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": "店铺不存在"}
 		this.ServeJSON()
@@ -463,7 +488,7 @@ func (this *StoreInfo) Post() {
 
 	storeInfo, err := order.GetStoreById(store_id)
 	if storeInfo.Uid != this.Uid {
-		this.Data["json"] = map[string]interface{}{"code": 0, "message": "错误的门店"}
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有权限"}
 		this.ServeJSON()
 		return
 	}

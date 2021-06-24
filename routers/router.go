@@ -63,21 +63,23 @@ func init() {
 	/*店家接口 ----------  start----------*/
 	beego.Router("/store/login", &store.Login{})                    //获取openid
 	beego.Router("/store/goods", &store.GoodsController{})          //获取openid
-	beego.Router("/store/goods/add", &store.ProductAddController{}) //获取openid
+	beego.Router("/store/goods/add", &store.ProductAddController{}) //添加商品
 	beego.Router("/store/enterlog", &store.EnterLogs{})             //进入记录
-	beego.Router("/store/enterdetail", &store.EnterDetail{})        //进入记录
-	beego.Router("/store/goods/list", &store.ProductList{})         //获取
-	beego.Router("/store/goods/edit", &store.ProductEdit{})         //获取
-	beego.Router("/store/order/list", &store.OrderList{})           //获取
-	beego.Router("/store/withdraw", &store.WithDraw{})              //获取
-	beego.Router("/store/storelist", &store.StoreList{})            //获取
+	beego.Router("/store/enterdetail", &store.EnterDetail{})        //进入记录详情
+	beego.Router("/store/goods/list", &store.ProductList{})         //获取商品列表
+	beego.Router("/store/goods/edit", &store.ProductEdit{})         //编辑商品
+	beego.Router("/store/order/list", &store.OrderList{})           //获取订单列表
+	beego.Router("/store/withdraw", &store.WithDraw{})              //提现
+	beego.Router("/store/storelist", &store.StoreList{})            //获取店铺列表
 	beego.Router("/store/storeinfo", &store.StoreInfo{})            //获取 修改
-	beego.Router("/store/storestatus", &store.StoreStatus{})        //获取
+	beego.Router("/store/storestatus", &store.StoreStatus{})        //更改店铺营业状态
 	beego.Router("/store/videos", &store.GetVideos{})               //摄像头列表
 	beego.Router("/store/wxconfig", &store.GetJsConfig{})           //微信js
 	beego.Router("/store/bill", &store.BillLists{})                 //商家账单
 	beego.Router("/store/finance", &store.Finance{})                //财务信息
 	beego.Router("/store/userinfo", &store.UserInfo{})              //获取用户信息
 	beego.Router("/store/catetree", &store.GateTree{})              //获取商品分类
+	beego.Router("/store/suborder", &store.SubOrderController{})    //提交订单
+	beego.Router("/store/orderpaid", &store.OrderPaid{})            //更改订单为支付
 	/* --------  end   ---------店家接口*/
 }

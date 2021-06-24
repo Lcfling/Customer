@@ -50,7 +50,7 @@ func (this *AddStore) Post() {
 
 //所有分类
 type GateTree struct {
-	controllers.MobileController
+	controllers.StaffController
 }
 
 func (this *GateTree) Get() {
@@ -65,7 +65,7 @@ func (this *GateTree) Get() {
 }
 
 type SubOrderController struct {
-	controllers.UserBaseController
+	controllers.StaffController
 }
 
 func (this *SubOrderController) Post() {
@@ -101,5 +101,27 @@ func (this *SubOrderController) Post() {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": "创建订单错误，请联系客服处理！"}
 		this.ServeJSON()
 		return
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": order_id}
+		this.ServeJSON()
+		return
+	}
+}
+
+type OrderPaid struct {
+	controllers.StaffController
+}
+
+func (this *OrderPaid) Get() {
+	order_id := this.GetString("orderid")
+	m, _ := this.GetInt64("m")
+	err := order.OrderPaid(order_id, m, "0")
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": err.Error()}
+		this.ServeJSON()
+		return
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success"}
+		this.ServeJSON()
 	}
 }

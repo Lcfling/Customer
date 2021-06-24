@@ -78,5 +78,6 @@ func init() {
 	beego.Router("/store/bill", &store.BillLists{})                 //商家账单
 	beego.Router("/store/finance", &store.Finance{})                //财务信息
 	beego.Router("/store/userinfo", &store.UserInfo{})              //获取用户信息
+	beego.Router("/store/catetree", &store.GateTree{})              //获取商品分类
 	/* --------  end   ---------店家接口*/
 }

@@ -14,12 +14,18 @@ type GoodsController struct {
 
 func (this *GoodsController) Get() {
 
-	barcode,_:=this.GetInt64("barcode")
-	token:=this.GetString("dsn")
-	doorinfo,_:=device.GetDiviveByToken(token)
-	store_id:=doorinfo.StoreId
-	pro:=order.GetProductByStoreCode(barcode,store_id)
-
-	this.Data["json"]=map[string]interface{}{"code": 1, "message": "success","data":pro}
+	barcode, _ := this.GetInt64("barcode")
+	token := this.GetString("dsn")
+	doorinfo, _ := device.GetDiviveByToken(token)
+	store_id := doorinfo.StoreId
+	pro, err := order.GetProductByBigCode(barcode, store_id)
+	if err == nil {
+		pro.IsBig = 1
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": pro}
+		this.ServeJSON()
+		return
+	}
+	pro = order.GetProductByStoreCode(barcode, store_id)
+	this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": pro}
 	this.ServeJSON()
 }

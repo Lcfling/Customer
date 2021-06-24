@@ -77,6 +77,8 @@ func (this *ProductAddController) Post() {
 	proname := html.EscapeString(this.GetString("proname"))
 	proinfo := html.EscapeString(this.GetString("proinfo"))
 	keyword := html.EscapeString(this.GetString("keyword"))
+	big_code, _ := this.GetInt64("bigcode")
+	exchange, _ := this.GetInt64("exchange")
 	bar_code, _ := this.GetInt64("barcode")
 	cate_id, _ := this.GetInt64("cate_id")
 	cost, _ := this.GetInt64("cost")
@@ -117,6 +119,8 @@ func (this *ProductAddController) Post() {
 	pro.ProName = proname
 	pro.ProInfo = proinfo
 	pro.Keyword = keyword
+	pro.Bigcode = strconv.FormatInt(big_code, 10)
+	pro.Exchange = exchange
 	pro.BarCode = strconv.FormatInt(bar_code, 10)
 	pro.CateId = cate_id
 	pro.Cost = cost
@@ -150,10 +154,15 @@ func (this *ProductEdit) Get() {
 		return
 	}
 
-	pro := order.GetProductById(id)
+	pro, err := order.GetProductById(id)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "商品不存在"}
+		this.ServeJSON()
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": pro}
+		this.ServeJSON()
+	}
 
-	this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": pro}
-	this.ServeJSON()
 }
 func (this *ProductEdit) Post() {
 	store_id, _ := this.GetInt64("storeid")
@@ -191,6 +200,12 @@ func (this *ProductEdit) Post() {
 
 }
 
+type nextPageUrl struct {
+	Pages   int64
+	Keyword string
+	Cateid  int64
+}
+
 //商品列表
 type ProductList struct {
 	controllers.MobileController
@@ -198,8 +213,13 @@ type ProductList struct {
 
 func (this *ProductList) Get() {
 	store_id, _ := this.GetInt64("storeid")
-	lastid, _ := this.GetInt64("lastid")
-	keyword := this.GetString("keyword")
+	pages, _ := this.GetInt64("pages")
+	keyword := html.EscapeString(this.GetString("keyword"))
+	cate_id, _ := this.GetInt64("cateid")
+	if pages == 0 {
+		pages = 1
+	}
+
 	if store_id == 0 {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": "请选择店铺"}
 		this.ServeJSON()
@@ -218,13 +238,17 @@ func (this *ProductList) Get() {
 		this.ServeJSON()
 		return
 	}
-	_, list, err := order.ProductList(store_id, keyword, lastid)
+	_, list, err := order.ProductListPages(store_id, cate_id, keyword, pages)
 	if err != nil {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": "error"}
 		this.ServeJSON()
 		return
 	} else {
-		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": list}
+		url := &nextPageUrl{}
+		url.Pages = pages + 1
+		url.Keyword = keyword
+		url.Cateid = cate_id
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": list, "next": url}
 		this.ServeJSON()
 		return
 	}

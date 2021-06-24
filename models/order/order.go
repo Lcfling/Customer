@@ -262,6 +262,55 @@ func OrderPaid(order_id string, paidPrice int64, out_trade_sn string) error {
 	return nil
 }
 
+//线下支付
+func OrderPaidUnderLine(order_id string, paidPrice int64, out_trade_sn string) error {
+
+	qb, _ := orm.NewQueryBuilder("mysql")
+
+	qb.Select("*").
+		From("eb_store_order").
+		Where("order_id=? ").
+		And("status=0").
+		ForUpdate()
+	sql := qb.String()
+	o := orm.NewOrm()
+	o.Using("default")
+	o.Begin()
+
+	var order Order
+
+	err := o.Raw(sql, order_id).QueryRow(&order)
+
+	if err != nil {
+		o.Rollback()
+		return err
+	}
+	if order.Status != 0 {
+		o.Rollback()
+		return errors.New("订单已处理")
+	}
+	order.PayPrice = paidPrice
+	order.PayTime = time.Now().Unix()
+	order.Status = 1
+	order.OutTradeSn = out_trade_sn
+	_, err = o.Update(&order, "pay_price", "pay_time", "status", "out_trade_sn")
+	if err != nil {
+		o.Rollback()
+		return err
+	}
+
+	qb, _ = orm.NewQueryBuilder("mysql")
+	qb.Update("eb_sell_detail").Set("status=1").Where("order_id=?")
+	sql = qb.String()
+	_, err = o.Raw(sql, order_id).Exec()
+	if err != nil {
+		o.Rollback()
+		return err
+	}
+	o.Commit()
+	return nil
+}
+
 func OrderCounts(b, e int64, status int) (int64, error) {
 	o := orm.NewOrm()
 	o.Using("default")

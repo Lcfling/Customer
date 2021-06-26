@@ -31,7 +31,7 @@ func AddStock(id, nums, uid int64) error {
 	o := orm.NewOrm()
 	o.Using("default")
 	qb, _ := orm.NewQueryBuilder("mysql")
-	qb.Update("eb_sotre_product").Set("stock=stock+?").Where("id=?")
+	qb.Update("eb_store_product").Set("stock=stock+?").Where("id=?")
 	sql := qb.String()
 	o.Begin()
 	_, err = o.Raw(sql, nums, id).Exec()
@@ -47,5 +47,6 @@ func AddStock(id, nums, uid int64) error {
 		o.Rollback()
 		return err
 	}
+	o.Commit()
 	return nil
 }

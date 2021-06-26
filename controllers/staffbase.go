@@ -10,7 +10,7 @@ import (
 	"strconv"
 )
 
-//店家用户头
+//员工用户头
 type StaffController struct {
 	beego.Controller
 	IsLogin bool
@@ -47,12 +47,12 @@ func (this *StaffController) Prepare() {
 		this.ServeJSON()
 		return
 	}
-	if user.UserType != 4 && user.UserType != 3 {
+	if user.UserType != 3 && user.UserType != 5 {
 		this.Data["json"] = map[string]interface{}{"code": 2, "message": "登录用户类型错误", "data": nil}
 		this.ServeJSON()
 		return
 	}
-	if user.UserType == 4 {
+	if user.UserType == 5 {
 		this.StoreToList(user.Id)
 	}
 	this.IsLogin = true

@@ -76,10 +76,20 @@ func init() {
 	beego.Router("/store/videos", &store.GetVideos{})               //摄像头列表
 	beego.Router("/store/wxconfig", &store.GetJsConfig{})           //微信js
 	beego.Router("/store/bill", &store.BillLists{})                 //商家账单
-	beego.Router("/store/finance", &store.Finance{})                //财务信息
-	beego.Router("/store/userinfo", &store.UserInfo{})              //获取用户信息
-	beego.Router("/store/catetree", &store.GateTree{})              //获取商品分类
-	beego.Router("/store/suborder", &store.SubOrderController{})    //提交订单
-	beego.Router("/store/orderpaid", &store.OrderPaid{})            //更改订单为支付
+
+	beego.Router("/store/finance", &store.Finance{})   //财务信息
+	beego.Router("/store/userinfo", &store.UserInfo{}) //获取用户信息
+
+	beego.Router("/store/addstock", &store.AddStock{}) //商品库存入库
+
+	beego.Router("/store/catetree", &store.GateTree{})             //获取商品分类
+	beego.Router("/store/suborder", &store.SubOrderController{})   //提交订单
+	beego.Router("/store/orderpaid", &store.OrderPaid{})           //更改订单为支付
+	beego.Router("/store/stafflist", &store.StaffList{})           //员工列表
+	beego.Router("/store/staffadd", &store.AddStaff{})             //添加员工
+	beego.Router("/store/storestaffbind", &store.StoreStaffBind{}) //绑定店铺员工
+	beego.Router("/store/staffbindlist", &store.StaffBindList{})
+	beego.Router("/store/changepwd", &store.ChangePwd{}) //密码修改
+
 	/* --------  end   ---------店家接口*/
 }

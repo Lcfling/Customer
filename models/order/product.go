@@ -1,6 +1,7 @@
 package order
 
 import (
+	"errors"
 	"github.com/Lcfling/Customer/models"
 	"github.com/astaxie/beego/orm"
 	"strconv"
@@ -127,9 +128,6 @@ func ProductListPages(store_id, cate_id int64, keyword string, pages int64) (int
 	if keyword != "" {
 		cond = cond.And("pro_name__icontains", keyword)
 	}
-	if pages != 0 {
-		cond = cond.And("id__lt", pages)
-	}
 	if cate_id != 0 {
 		cond = cond.And("cate_id", cate_id)
 	}
@@ -165,3 +163,30 @@ func ProductEdit(proI Product) (int64, error) {
 /*func GetProList([]int64)([]Product){
 
 }*/
+
+func StockByOrder(order_id int64) error {
+	o := orm.NewOrm()
+	o.Using("default")
+	qs := o.QueryTable(models.TableName("store_product"))
+	cond := orm.NewCondition()
+	cond = cond.And("order_id", order_id)
+	var selllist []SellDetail
+	num, err := qs.All(&selllist)
+	if err != nil || num == 0 {
+		return errors.New("nums==0")
+	}
+	o.Begin() //开启事务
+	var sql string
+	for _, v := range selllist {
+		qb, _ := orm.NewQueryBuilder("mysql")
+		qb.Update("eb_store_product").Set("stock=stock-?,sales=sales+?").Where("uid=?")
+		sql = qb.String()
+		_, err = o.Raw(sql, v.Nums, v.Nums, v.ProductId).Exec()
+		if err != nil {
+			o.Rollback()
+			return err
+		}
+	}
+	o.Commit()
+	return nil
+}

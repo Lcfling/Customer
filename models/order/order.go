@@ -275,6 +275,7 @@ func OrderPaidUnderLine(order_id string, paidPrice int64, out_trade_sn string) e
 	sql := qb.String()
 	o := orm.NewOrm()
 	o.Using("default")
+
 	o.Begin()
 
 	var order Order
@@ -307,6 +308,7 @@ func OrderPaidUnderLine(order_id string, paidPrice int64, out_trade_sn string) e
 		o.Rollback()
 		return err
 	}
+
 	o.Commit()
 	return nil
 }

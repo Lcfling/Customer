@@ -88,13 +88,15 @@ func (this *SubOrderController) Post() {
 	orderSend := cmd.SendOrder{Cmd: 3, Uid: this.Uid, Storeid: store_id, Ordersn: order_id}
 	service_id, _ := service.GetService(store_id)
 
-	go socket.SendMessageToPeer(service_id, orderSend)
+	if service_id > 0 {
+		go socket.SendMessageToPeer(service_id, orderSend)
+	}
 
-	if err != nil {
+	/*if err != nil {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": "数据处理失败，联系管理员"}
 		this.ServeJSON()
 		return
-	}
+	}*/
 
 	fmt.Println("mapData:", mapDate)
 	this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": mapDate}

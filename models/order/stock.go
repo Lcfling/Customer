@@ -13,7 +13,7 @@ type Stock struct {
 	Pid      int64
 	Pname    string
 	StoreId  int64
-	Counts   int64
+	Counts   float64
 	Creatime int64
 }
 
@@ -23,7 +23,7 @@ func (this *Stock) TableName() string {
 func init() {
 	orm.RegisterModel(new(Stock))
 }
-func AddStock(id, nums, uid int64) error {
+func AddStock(id, uid int64, nums float64) error {
 	pro, err := GetProductById(id)
 	if err != nil {
 		return err

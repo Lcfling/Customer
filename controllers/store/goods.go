@@ -19,29 +19,47 @@ type AddStock struct {
 func (this *AddStock) Get() {
 	barcode, _ := this.GetInt64("barcode")
 	store_id, _ := this.GetInt64("storeid")
-	pro, err := order.GetProductByBigCode(barcode, store_id)
-	if err == nil {
-		pro.IsBig = 1
+
+	pro, err := order.GetProductByStoreCode(barcode, store_id)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "failed", "data": ""}
+		this.ServeJSON()
+	} else {
 		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": pro}
 		this.ServeJSON()
-		return
 	}
-	pro = order.GetProductByStoreCode(barcode, store_id)
-	this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": pro}
-	this.ServeJSON()
+
 }
 func (this *AddStock) Post() {
 
 	//todo 添加入库锁 2秒内 单用户只能入库一次
 
 	id, _ := this.GetInt64("id")
-	nums, _ := this.GetInt64("nums")
+	nums, _ := this.GetFloat("nums")
 	if !(nums > 0 && id > 0) {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": "入库数量必须大于0"}
 		this.ServeJSON()
 		return
 	}
-	err := order.AddStock(id, nums, this.Uid)
+	//todo 大码入库问题
+
+	product, err := order.GetProductById(id)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "请检测商品是否存在"}
+		this.ServeJSON()
+	}
+	if len([]rune(product.Sbarcode)) > 5 {
+		sbc, _ := strconv.ParseInt(product.Sbarcode, 10, 64)
+		realp, err := order.GetProductByStoreCode(sbc, product.StoreId)
+		if err != nil {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "该商品内码错误"}
+			this.ServeJSON()
+		}
+		err = order.AddStock(realp.Id, this.Uid, nums*float64(realp.Exchange))
+	} else {
+		err = order.AddStock(id, this.Uid, nums)
+	}
+
 	if err != nil {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": "入库错误，请联系管理员"}
 		this.ServeJSON()
@@ -152,10 +170,10 @@ func (this *ProductAddController) Post() {
 	proname := html.EscapeString(this.GetString("proname"))
 	proinfo := html.EscapeString(this.GetString("proinfo"))
 	keyword := html.EscapeString(this.GetString("keyword"))
-	big_code, _ := this.GetInt64("bigcode")
+	sbarcode, _ := this.GetInt64("sbarcode")
 	exchange, _ := this.GetInt64("exchange")
 	bar_code, _ := this.GetInt64("barcode")
-	cate_id, _ := this.GetInt64("cate_id")
+	cate_id, _ := this.GetInt64("cateid")
 	cost, _ := this.GetInt64("cost")
 	price, _ := this.GetInt64("price")
 	unit_name := html.EscapeString(this.GetString("unit_name"))
@@ -196,7 +214,8 @@ func (this *ProductAddController) Post() {
 	pro.ProName = proname
 	pro.ProInfo = proinfo
 	pro.Keyword = keyword
-	pro.Bigcode = strconv.FormatInt(big_code, 10)
+	pro.Sbarcode = strconv.FormatInt(sbarcode, 10)
+	pro.Sid = 0
 	pro.Exchange = exchange
 	pro.BarCode = strconv.FormatInt(bar_code, 10)
 	pro.CateId = cate_id
@@ -204,6 +223,16 @@ func (this *ProductAddController) Post() {
 	pro.Price = price
 	pro.UnitName = unit_name
 	pro.Sort = sort
+
+	if sbarcode > 0 {
+		spro, err := order.GetProductByStoreCode(sbarcode, store_id)
+		if err != nil {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "无对应内码商品"}
+			return
+		}
+		pro.Sid = spro.Id
+	}
+
 	id, err := order.ProductAdd(pro)
 	if err == nil {
 		this.Data["json"] = map[string]interface{}{"code": 1, "message": "入库信息成功", "data": fmt.Sprintf("%d", id)}
@@ -213,7 +242,6 @@ func (this *ProductAddController) Post() {
 		} else {
 			this.Data["json"] = map[string]interface{}{"code": 0, "message": "入库信息失败：" + err.Error()}
 		}
-
 	}
 	this.ServeJSON()
 }
@@ -270,6 +298,7 @@ func (this *ProductEdit) Post() {
 	p = order.Product{Id: id}
 	p.ProName = html.EscapeString(proname)
 	p.UnitName = html.EscapeString(unitname)
+	p.CateId, _ = this.GetInt64("cateid")
 	p.Price, _ = this.GetInt64("price")
 	p.Cost, _ = this.GetInt64("cost")
 	_, err = order.ProductEdit(p)

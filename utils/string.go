@@ -70,6 +70,15 @@ func StrReplacepos(s string, pos, length int, t string) string {
 	copy(runes[pos:l], ts[0:length])
 	return string(runes[0:])
 }
+func GetStrPos(s string, pos, length int) string {
+	l := pos + length
+
+	runes := []byte(s)
+	if len(runes) < l {
+		return s
+	}
+	return string(runes[pos:l])
+}
 
 func GetFileSuffix(s string) string {
 	re, _ := regexp.Compile(".(jpg|jpeg|png|gif|exe|doc|docx|ppt|pptx|xls|xlsx)")

@@ -15,7 +15,8 @@ type Product struct {
 	ProName  string
 	ProInfo  string
 	Keyword  string
-	Bigcode  string //大码 外包装的条形码
+	Sbarcode string //大码 外包装的条形码
+	Sid      int64  //内码 对应的id
 	Exchange int64  //大码兑换小码的数量
 	BarCode  string
 	CateId   int64
@@ -23,11 +24,11 @@ type Product struct {
 	Price    int64
 	UnitName string
 	Sort     int64
-	Sales    int64
-	Stock    int64
+	Sales    float64
+	Stock    float64
 	AddTime  int64
 	IsDel    int
-	IsBig    int `orm:"-"`
+	Nums     float64 `orm:"-"`
 }
 
 func (this *Product) TableName() string {
@@ -53,20 +54,12 @@ func GetProductById(Id int64) (Product, error) {
 	err := o.Read(&pro, "id")
 	return pro, err
 }
-func GetProductByStoreCode(code int64, store_id int64) Product {
+func GetProductByStoreCode(code int64, store_id int64) (Product, error) {
 	barcode := strconv.FormatInt(code, 10)
 	var pro Product
 	o := orm.NewOrm()
 	pro = Product{BarCode: barcode, StoreId: store_id}
-	o.Read(&pro, "bar_code", "store_id")
-	return pro
-}
-func GetProductByBigCode(code int64, store_id int64) (Product, error) {
-	barcode := strconv.FormatInt(code, 10)
-	var pro Product
-	o := orm.NewOrm()
-	pro = Product{Bigcode: barcode, StoreId: store_id}
-	err := o.Read(&pro, "bigcode", "store_id")
+	err := o.Read(&pro, "bar_code", "store_id")
 	return pro, err
 }
 
@@ -79,7 +72,7 @@ func ProductAdd(proI Product) (int64, error) {
 	pro.ProName = proI.ProName
 	pro.ProInfo = proI.ProInfo
 	pro.Keyword = proI.Keyword
-	pro.Bigcode = proI.Bigcode
+	pro.Sbarcode = proI.Sbarcode
 	pro.Exchange = proI.Exchange
 	pro.BarCode = proI.BarCode
 	pro.CateId = proI.CateId
@@ -129,7 +122,11 @@ func ProductListPages(store_id, cate_id int64, keyword string, pages int64) (int
 		cond = cond.And("pro_name__icontains", keyword)
 	}
 	if cate_id != 0 {
-		cond = cond.And("cate_id", cate_id)
+		tree, _ := GetTree()
+		arr := GetTreeArray(cate_id, NodeToTree(tree))
+		if len(arr) > 0 {
+			cond = cond.And("cate_id__in", arr)
+		}
 	}
 
 	qs = qs.SetCond(cond)
@@ -156,7 +153,10 @@ func ProductEdit(proI Product) (int64, error) {
 	if proI.Price != 0 {
 		pro.Price = proI.Price
 	}
-	nums, err := o.Update(&pro, "pro_name", "unit_name", "cost", "price")
+	if proI.CateId != 0 {
+		pro.CateId = proI.CateId
+	}
+	nums, err := o.Update(&pro, "pro_name", "unit_name", "cost", "price", "cate_id")
 	return nums, err
 }
 
@@ -164,12 +164,14 @@ func ProductEdit(proI Product) (int64, error) {
 
 }*/
 
-func StockByOrder(order_id int64) error {
+func StockByOrder(order_id string) error {
 	o := orm.NewOrm()
 	o.Using("default")
-	qs := o.QueryTable(models.TableName("store_product"))
+	qs := o.QueryTable(models.TableName("sell_detail"))
 	cond := orm.NewCondition()
 	cond = cond.And("order_id", order_id)
+	//cond = cond.And("status", 1)
+	qs = qs.SetCond(cond)
 	var selllist []SellDetail
 	num, err := qs.All(&selllist)
 	if err != nil || num == 0 {
@@ -177,11 +179,24 @@ func StockByOrder(order_id int64) error {
 	}
 	o.Begin() //开启事务
 	var sql string
+	//var product Product
 	for _, v := range selllist {
+
 		qb, _ := orm.NewQueryBuilder("mysql")
-		qb.Update("eb_store_product").Set("stock=stock-?,sales=sales+?").Where("uid=?")
+		qb.Update("eb_store_product").Set("stock=stock-?,sales=sales+?").Where("id=?")
 		sql = qb.String()
-		_, err = o.Raw(sql, v.Nums, v.Nums, v.ProductId).Exec()
+
+		if v.Sid > 0 {
+			p, err := GetProductById(v.Sid)
+			if err != nil {
+				o.Rollback()
+				return err
+			}
+			_, err = o.Raw(sql, v.Nums*float64(p.Exchange), v.Nums*float64(p.Exchange), v.Sid).Exec()
+		} else {
+			_, err = o.Raw(sql, v.Nums, v.Nums, v.ProductId).Exec()
+		}
+
 		if err != nil {
 			o.Rollback()
 			return err

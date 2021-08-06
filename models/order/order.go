@@ -14,7 +14,7 @@ type Order struct {
 	OrderId        string
 	OutTradeSn     string
 	Uid            int64
-	TotalNum       int64
+	TotalNum       float64
 	TotalPrice     int64
 	PayPrice       int64
 	DeductionPrice int64
@@ -36,7 +36,7 @@ type Order struct {
 //用户提交数据列表
 type SubList struct {
 	Productid int64
-	Nums      int64
+	Nums      float64
 }
 
 func (this *Order) TableName() string {
@@ -114,7 +114,7 @@ func CreatOrder(list []SubList, store_id int64, uid int64, order_id string, payt
 
 	var selldetaillist []SellDetail
 
-	var sums int64 = 0       //所有物品的总数量
+	var sums float64 = 0     //所有物品的总数量
 	var totalprice int64 = 0 //所以物品的总价格
 	for _, v := range Pro {
 		//selldetaillist
@@ -124,9 +124,10 @@ func CreatOrder(list []SubList, store_id int64, uid int64, order_id string, payt
 		sellArr.OrderId = order_id
 		sellArr.StoreId = store_id
 		sellArr.Uid = uid
+		sellArr.Sid = v.Sid
 		sellArr.Nums = maplist[v.Id].Nums
 		sellArr.Price = v.Price
-		sellArr.TotalPrice = maplist[v.Id].Nums * v.Price
+		sellArr.TotalPrice = int64(maplist[v.Id].Nums * float64(v.Price))
 		sellArr.Status = 0
 		sellArr.PayType = paytype
 		sellArr.Creatime = time.Now().Unix()
@@ -259,6 +260,7 @@ func OrderPaid(order_id string, paidPrice int64, out_trade_sn string) error {
 		return err
 	}
 	o.Commit()
+	go StockByOrder(order_id)
 	return nil
 }
 
@@ -310,6 +312,7 @@ func OrderPaidUnderLine(order_id string, paidPrice int64, out_trade_sn string) e
 	}
 
 	o.Commit()
+	go StockByOrder(order_id)
 	return nil
 }
 

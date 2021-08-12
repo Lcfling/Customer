@@ -6,6 +6,7 @@ import (
 	"github.com/Lcfling/Customer/models/logs"
 	"github.com/Lcfling/Customer/models/order"
 	"github.com/Lcfling/Customer/models/users"
+	"github.com/Lcfling/Customer/udpsok"
 	"github.com/Lcfling/Customer/utils"
 	"html"
 )
@@ -419,5 +420,51 @@ func (this *GetVideos) Get() {
 		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": list}
 		this.ServeJSON()
 		return
+	}
+}
+
+type OpenLight struct {
+	controllers.MobileController
+}
+
+func (this *OpenLight) Post() {
+	store_id, _ := this.GetInt64("storeid")
+
+	lamp, err := device.GetLampByStore(store_id, 2)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "配置错误:找不到灯控信息"}
+		this.ServeJSON()
+		return
+	}
+	err = udpsok.HandleOpenDoor(lamp.Devicesn, lamp.Nums)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": err.Error()}
+		this.ServeJSON()
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success"}
+		this.ServeJSON()
+	}
+}
+
+type CloseLight struct {
+	controllers.MobileController
+}
+
+func (this *CloseLight) Post() {
+	store_id, _ := this.GetInt64("storeid")
+
+	lamp, err := device.GetLampByStore(store_id, 3)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "配置错误:找不到灯控信息"}
+		this.ServeJSON()
+		return
+	}
+	err = udpsok.HandleOpenDoor(lamp.Devicesn, lamp.Nums)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": err.Error()}
+		this.ServeJSON()
+	} else {
+		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success"}
+		this.ServeJSON()
 	}
 }

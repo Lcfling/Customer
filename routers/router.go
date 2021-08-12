@@ -89,7 +89,9 @@ func init() {
 	beego.Router("/store/staffadd", &store.AddStaff{})             //添加员工
 	beego.Router("/store/storestaffbind", &store.StoreStaffBind{}) //绑定店铺员工
 	beego.Router("/store/staffbindlist", &store.StaffBindList{})
-	beego.Router("/store/changepwd", &store.ChangePwd{}) //密码修改
+	beego.Router("/store/changepwd", &store.ChangePwd{})   //密码修改
+	beego.Router("/store/openlight", &store.OpenLight{})   //开灯
+	beego.Router("/store/closelight", &store.CloseLight{}) //关灯
 
 	/* --------  end   ---------店家接口*/
 }

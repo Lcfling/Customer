@@ -17,7 +17,7 @@ type Users struct {
 	Balance     int64
 	Pwd         string
 	Token       string
-	Openid      string
+	Openid      string `orm:"null"`
 	Accesstoken string
 	Nickname    string
 	Avatar      string

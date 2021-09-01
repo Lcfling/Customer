@@ -19,6 +19,7 @@ func NewClient(conn *net.UDPConn, sn int64, addr *net.UDPAddr) *Client {
 	client.addr = addr
 	client.sn = sn
 	client.conn = conn
+	client.lastime = time.Now().Unix()
 	client.Run()
 	return client
 }
@@ -39,7 +40,7 @@ func (client *Client) Write() {
 		select {
 		case msg := <-client.wt:
 			if msg == nil {
-				client.close()
+				//client.close()
 				running = false
 				log.Infof("client:%d socket closed", client.sn)
 				return
@@ -77,7 +78,7 @@ func (client *Client) Check() {
 }
 
 func (client *Client) Run() {
-	go client.Check()
+	//go client.Check()
 	go client.Write()
 	go client.Read()
 }

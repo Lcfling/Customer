@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"github.com/Lcfling/Customer/controllers"
 	"github.com/Lcfling/Customer/models/device"
 	"github.com/Lcfling/Customer/models/logs"
@@ -9,6 +10,7 @@ import (
 	"github.com/Lcfling/Customer/udpsok"
 	"github.com/Lcfling/Customer/utils"
 	"html"
+	"time"
 )
 
 //需要权限
@@ -133,6 +135,63 @@ func (this *OrderList) Get() {
 		this.ServeJSON()
 		return
 	}
+}
+
+type Statistics struct {
+	controllers.StaffController
+}
+
+type StatisticsRes struct {
+	SellPrice int64
+	SellCosts int64
+	Income    int64
+}
+
+func (this *Statistics) Get() {
+	//if
+	BeginDate := this.GetString("begindate")
+	EndDate := this.GetString("enddate")
+	var overDateUnix, startDateUnix int64
+	fmt.Println(BeginDate)
+	if EndDate == "" {
+		overDateUnix = 0
+	} else {
+		overDateUnix = utils.Time2unix(EndDate)
+	}
+	if BeginDate == "" {
+		startDateUnix = utils.Time2unix(utils.GetDate(time.Now().Unix()))
+	} else {
+		startDateUnix = utils.Time2unix(BeginDate)
+	}
+
+	store_id, _ := this.GetInt64("storeid")
+	// 鉴权 store_id
+	storeInfo, _ := order.GetStoreById(store_id)
+	if storeInfo.Uid != this.Uid {
+		if !this.IsStorePower(store_id) {
+			this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有店铺权限"}
+			this.ServeJSON()
+			return
+		}
+	}
+	fmt.Println(startDateUnix)
+
+	sellPrice, err := order.GetStoreSellPrice(store_id, startDateUnix, overDateUnix)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "数据获取失败"}
+		this.ServeJSON()
+		return
+	}
+	sellCosts, err := order.GetStoreSellCosts(store_id, startDateUnix, overDateUnix)
+	if err != nil {
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "数据获取失败"}
+		this.ServeJSON()
+		return
+	}
+	Income, err := order.GetIncome(store_id, startDateUnix, overDateUnix)
+	s := &StatisticsRes{SellPrice: sellPrice, SellCosts: sellCosts, Income: Income}
+	this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": s}
+	this.ServeJSON()
 }
 
 type OrderDetail struct {

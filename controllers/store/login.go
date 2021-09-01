@@ -3,6 +3,7 @@ package store
 import (
 	"fmt"
 	"github.com/Lcfling/Customer/controllers"
+	"github.com/Lcfling/Customer/models/order"
 	"github.com/Lcfling/Customer/models/users"
 	"github.com/Lcfling/Customer/utils"
 	"html"
@@ -59,7 +60,7 @@ type BillLists struct {
 
 func (this *BillLists) Get() {
 	lastid, _ := this.GetInt64("lastid")
-	list, err := users.BillList(this.Uid, lastid)
+	list, err := order.BillList(this.Uid, lastid)
 	if err != nil {
 		this.Data["json"] = map[string]interface{}{"code": 0, "message": "没有更多的信息"}
 		this.ServeJSON()

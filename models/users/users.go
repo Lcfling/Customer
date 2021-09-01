@@ -17,7 +17,7 @@ type Users struct {
 	Balance     int64
 	Pwd         string
 	Token       string
-	Openid      string `orm:"null"`
+	Openid      *string `orm:"null"`
 	Accesstoken string
 	Nickname    string
 	Avatar      string
@@ -60,7 +60,8 @@ func ChangeUserOnline(uid int64, status int) {
 func LoginByOpenid(openid string) (Users, bool) {
 
 	o := orm.NewOrm()
-	user := Users{Openid: openid}
+	newid := openid
+	user := Users{Openid: &newid}
 	err := o.Read(&user, "openid")
 	if err != nil && err.Error() == "<QuerySeter> no row found" {
 		return user, false

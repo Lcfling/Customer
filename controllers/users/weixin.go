@@ -76,7 +76,7 @@ func (this *CodeSession) Post() {
 			user.Account = "wx" + strconv.FormatInt(utils.SnowFlakeId(), 10)
 			user.LoginType = "weixin"
 			user.Status = 1
-			user.Openid = openid
+			user.Openid = &openid
 			user.UserType = 1
 			uid, token, err := users.GreateUser(user)
 			if err != nil {
@@ -142,7 +142,7 @@ func (this *CodeSession) Post() {
 			user.Account = "ali" + strconv.FormatInt(utils.SnowFlakeId(), 10)
 			user.LoginType = "alipay"
 			user.Status = 1
-			user.Openid = openid
+			user.Openid = &openid
 			user.Accesstoken = accesstoken
 			user.UserType = 2
 			uid, token, err := users.GreateUser(user)

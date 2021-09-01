@@ -128,6 +128,7 @@ func CreatOrder(list []SubList, store_id int64, uid int64, order_id string, payt
 		sellArr.Nums = maplist[v.Id].Nums
 		sellArr.Price = v.Price
 		sellArr.TotalPrice = int64(maplist[v.Id].Nums * float64(v.Price))
+		sellArr.TotalCost = int64(maplist[v.Id].Nums * float64(v.Cost))
 		sellArr.Status = 0
 		sellArr.PayType = paytype
 		sellArr.Creatime = time.Now().Unix()

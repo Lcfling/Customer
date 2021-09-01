@@ -53,5 +53,5 @@ func (this *UserBaseController) Prepare() {
 	this.Uid = user.Id
 	this.UserAvatar = user.Avatar
 	this.UserType = user.UserType
-	this.Openid = user.Openid
+	this.Openid = *user.Openid
 }

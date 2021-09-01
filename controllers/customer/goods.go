@@ -20,7 +20,7 @@ func (this *GoodsController) Get() {
 	token := this.GetString("dsn")
 
 	if !(barcode > 0) {
-		this.Data["json"] = map[string]interface{}{"code": 0, "message": "failed", "data": ""}
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "商品不存在", "data": ""}
 		this.ServeJSON()
 		return
 	}
@@ -43,7 +43,7 @@ func (this *GoodsController) Get() {
 
 	pro, err = order.GetProductByStoreCode(barcode, store_id)
 	if err != nil {
-		this.Data["json"] = map[string]interface{}{"code": 0, "message": "failed", "data": ""}
+		this.Data["json"] = map[string]interface{}{"code": 0, "message": "商品不存在", "data": ""}
 		this.ServeJSON()
 	} else {
 		this.Data["json"] = map[string]interface{}{"code": 1, "message": "success", "data": pro}

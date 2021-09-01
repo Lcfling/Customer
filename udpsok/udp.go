@@ -33,7 +33,7 @@ func Run() {
 		data := make([]byte, 64)
 		_, remoteAddr, err := socket.ReadFromUDP(data)
 		if err != nil {
-			fmt.Println("读取数据失败!", err)
+			//fmt.Println("读取数据失败!", err)
 			continue
 		}
 

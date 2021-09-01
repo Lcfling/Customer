@@ -368,7 +368,7 @@ func CreatAliOrder(order_id string, uid int64) (map[string]string, error) {
 	BizContent := make(map[string]interface{})
 	BizContent["out_trade_no"] = order_id
 	BizContent["total_amount"] = float64(orderInfo.TotalPrice) / 100
-	BizContent["buyer_id"] = userinfo.Openid
+	BizContent["buyer_id"] = *userinfo.Openid
 	BizContent["subject"] = "微淘云智服超市订单支付"
 	BizJson, err := json.Marshal(BizContent)
 	if err != nil {
